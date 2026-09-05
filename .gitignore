@@ -1,0 +1,50 @@
+# Node dependencies
+node_modules/
+frontend/node_modules/
+package-lock.json.backup
+
+# Production builds
+dist/
+dist-ssr/
+build/
+frontend/dist/
+frontend/dist-ssr/
+frontend/build/
+*.local
+
+# Python virtual environment & runtime files
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+backend/__pycache__/
+backend/*/__pycache__/
+backend/*/*/__pycache__/
+backend/*/*/*/__pycache__/
+*.db
+!backend/jobpal.db
+
+# Local Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.log

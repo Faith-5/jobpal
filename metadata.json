@@ -1,0 +1,6 @@
+{
+  "name": "JobPal AI",
+  "description": "AI-powered resume tailoring, ATS score analysis, and cover letter optimization platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
