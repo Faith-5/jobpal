@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ScreenType, UserProfile } from '../types';
+import React, { useState } from "react";
+import { ScreenType, UserProfile } from "../types";
 
 interface SignUpViewProps {
   onNavigate: (screen: ScreenType) => void;
@@ -10,13 +10,17 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
   onNavigate,
   onSignUpSuccess,
 }) => {
-  const [name, setName] = useState('Sarah Jenkins');
-  const [email, setEmail] = useState('sarah.jenkins@example.com');
-  const [phoneCode, setPhoneCode] = useState('+234');
-  const [phoneNumber, setPhoneNumber] = useState('9000000000');
-  const [primaryGoal, setPrimaryGoal] = useState<'actively_searching' | 'career_pivot' | 'exploring'>('actively_searching');
-  const [experienceLevel, setExperienceLevel] = useState<'junior' | 'mid' | 'senior'>('mid');
-  const [password, setPassword] = useState('SecurePass123!');
+  const [name, setName] = useState("Sarah Jenkins");
+  const [email, setEmail] = useState("sarah.jenkins@example.com");
+  const [phoneCode, setPhoneCode] = useState("+234");
+  const [phoneNumber, setPhoneNumber] = useState("9000000000");
+  const [primaryGoal, setPrimaryGoal] = useState<
+    "actively_searching" | "career_pivot" | "exploring"
+  >("actively_searching");
+  const [experienceLevel, setExperienceLevel] = useState<
+    "junior" | "mid" | "senior"
+  >("mid");
+  const [password, setPassword] = useState("SecurePass123!");
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -25,11 +29,16 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
       name,
       email,
       phone: `${phoneCode} ${phoneNumber}`,
-      state: '',
-      country: '',
+      state: "",
+      country: "",
       primaryGoal,
       experienceLevel,
-      role: experienceLevel === 'senior' ? 'Senior Product Designer' : experienceLevel === 'mid' ? 'Product Designer' : 'Junior Product Designer',
+      role:
+        experienceLevel === "senior"
+          ? "Senior Product Designer"
+          : experienceLevel === "mid"
+            ? "Product Designer"
+            : "Junior Product Designer",
     });
   };
 
@@ -47,15 +56,14 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
         <div className="flex flex-col items-center mb-6">
           <button
             id="signup-brand-btn"
-            onClick={() => onNavigate('landing')}
+            onClick={() => onNavigate("landing")}
             className="flex items-center gap-2 mb-3 group cursor-pointer"
           >
-            <span
-              className="material-symbols-outlined text-[32px] text-[#93C5FD] group-hover:scale-110 transition-transform"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              work
-            </span>
+            <img
+              src="/logo.svg"
+              alt=""
+              className="w-9 h-9 rounded-xl group-hover:scale-110 transition-transform"
+            />
             <span className="font-headline text-[24px] font-bold text-[#93C5FD]">
               JobPal
             </span>
@@ -153,9 +161,15 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
                 onChange={(e) => setPrimaryGoal(e.target.value as any)}
                 className="w-full bg-[#0B0F19]/60 border border-[#1E293B]/80 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl px-4 py-2.5 text-white text-[14px] outline-none transition-all cursor-pointer"
               >
-                <option value="actively_searching">Actively applying (ATS match)</option>
-                <option value="career_pivot">Pivoting careers (Transferable skills)</option>
-                <option value="exploring">Passive exploring (Skill matches)</option>
+                <option value="actively_searching">
+                  Actively applying (ATS match)
+                </option>
+                <option value="career_pivot">
+                  Pivoting careers (Transferable skills)
+                </option>
+                <option value="exploring">
+                  Passive exploring (Skill matches)
+                </option>
               </select>
             </div>
             <div>
@@ -173,7 +187,9 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
               >
                 <option value="junior">Entry-Level (Focus on projects)</option>
                 <option value="mid">Mid-Level (Focus on execution)</option>
-                <option value="senior">Senior / Exec (Focus on leadership)</option>
+                <option value="senior">
+                  Senior / Exec (Focus on leadership)
+                </option>
               </select>
             </div>
           </div>
@@ -189,7 +205,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
             <div className="relative">
               <input
                 id="signup-password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -203,7 +219,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer p-1"
               >
                 <span className="material-symbols-outlined text-[19px]">
-                  {showPassword ? 'visibility_off' : 'visibility'}
+                  {showPassword ? "visibility_off" : "visibility"}
                 </span>
               </button>
             </div>
@@ -221,10 +237,10 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
         {/* Footer Link */}
         <div className="mt-6 text-center border-t border-[#1E293B]/70 pt-5">
           <p className="font-body text-[14px] text-[#94A3B8]">
-            Already have an account?{' '}
+            Already have an account?{" "}
             <button
               id="link-go-to-signin"
-              onClick={() => onNavigate('signin')}
+              onClick={() => onNavigate("signin")}
               className="text-[#93C5FD] hover:underline font-medium cursor-pointer"
             >
               Log in

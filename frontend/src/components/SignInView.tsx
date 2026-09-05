@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ScreenType } from '../types';
+import React, { useState } from "react";
+import { ScreenType } from "../types";
 
 interface SignInViewProps {
   onNavigate: (screen: ScreenType) => void;
@@ -10,11 +10,11 @@ export const SignInView: React.FC<SignInViewProps> = ({
   onNavigate,
   onLoginSuccess,
 }) => {
-  const [email, setEmail] = useState('sarah.jenkins@example.com');
-  const [password, setPassword] = useState('••••••••••••');
+  const [email, setEmail] = useState("sarah.jenkins@example.com");
+  const [password, setPassword] = useState("••••••••••••");
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSubmitted, setForgotSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -37,15 +37,14 @@ export const SignInView: React.FC<SignInViewProps> = ({
         <div className="flex flex-col items-center mb-8">
           <button
             id="signin-brand-btn"
-            onClick={() => onNavigate('landing')}
+            onClick={() => onNavigate("landing")}
             className="flex items-center gap-2 mb-4 group cursor-pointer"
           >
-            <span
-              className="material-symbols-outlined text-[32px] text-[#93C5FD] group-hover:scale-110 transition-transform"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              work
-            </span>
+            <img
+              src="/logo.svg"
+              alt=""
+              className="w-9 h-9 rounded-xl group-hover:scale-110 transition-transform"
+            />
             <span className="font-headline text-[24px] font-bold text-[#93C5FD]">
               JobPal
             </span>
@@ -102,7 +101,7 @@ export const SignInView: React.FC<SignInViewProps> = ({
             <div className="relative">
               <input
                 id="signin-password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -117,7 +116,7 @@ export const SignInView: React.FC<SignInViewProps> = ({
                 aria-label="Toggle password visibility"
               >
                 <span className="material-symbols-outlined text-[20px]">
-                  {showPassword ? 'visibility_off' : 'visibility'}
+                  {showPassword ? "visibility_off" : "visibility"}
                 </span>
               </button>
             </div>
@@ -136,13 +135,15 @@ export const SignInView: React.FC<SignInViewProps> = ({
             type="button"
             id="btn-demo-signin"
             onClick={() => {
-              setEmail('sarah.jenkins@example.com');
-              setPassword('password123');
-              onLoginSuccess('sarah.jenkins@example.com');
+              setEmail("sarah.jenkins@example.com");
+              setPassword("password123");
+              onLoginSuccess("sarah.jenkins@example.com");
             }}
             className="w-full bg-[#1E293B] hover:bg-[#334155] border border-[#334155] text-[#94A3B8] hover:text-white font-headline text-[13px] font-semibold py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
           >
-            <span className="material-symbols-outlined text-[16px] text-emerald-400">bolt</span>
+            <span className="material-symbols-outlined text-[16px] text-emerald-400">
+              bolt
+            </span>
             <span>Fast Demo Login (Sarah Jenkins)</span>
           </button>
         </form>
@@ -150,10 +151,10 @@ export const SignInView: React.FC<SignInViewProps> = ({
         {/* Footer Link */}
         <div className="mt-8 text-center border-t border-[#1E293B]/70 pt-6">
           <p className="font-body text-[14px] text-[#94A3B8]">
-            Don&apos;t have an account?{' '}
+            Don&apos;t have an account?{" "}
             <button
               id="link-go-to-signup"
-              onClick={() => onNavigate('signup')}
+              onClick={() => onNavigate("signup")}
               className="text-[#93C5FD] hover:underline font-medium cursor-pointer"
             >
               Sign up
@@ -182,9 +183,12 @@ export const SignInView: React.FC<SignInViewProps> = ({
                 <span className="material-symbols-outlined text-[#4edea3] text-[40px] mb-2">
                   mark_email_read
                 </span>
-                <p className="text-white font-medium mb-1">Recovery link sent</p>
+                <p className="text-white font-medium mb-1">
+                  Recovery link sent
+                </p>
                 <p className="text-[#94A3B8] text-[13px] mb-4">
-                  Check your inbox at {forgotEmail || email} for instructions to reset your password.
+                  Check your inbox at {forgotEmail || email} for instructions to
+                  reset your password.
                 </p>
                 <button
                   onClick={() => setShowForgotModal(false)}
@@ -196,7 +200,8 @@ export const SignInView: React.FC<SignInViewProps> = ({
             ) : (
               <div>
                 <p className="font-body text-[14px] text-[#94A3B8] mb-4">
-                  Enter your email address and we&apos;ll send you a link to reset your password.
+                  Enter your email address and we&apos;ll send you a link to
+                  reset your password.
                 </p>
                 <input
                   type="email"

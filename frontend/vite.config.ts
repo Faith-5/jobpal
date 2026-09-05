@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/icon.svg", "icons/maskable.svg"],
+      includeAssets: ["logo.svg"],
       manifest: {
         name: "JobPal AI",
         short_name: "JobPal",
@@ -23,13 +23,13 @@ export default defineConfig({
         theme_color: "#131313",
         icons: [
           {
-            src: "/icons/icon.svg",
+            src: "/logo.svg",
             sizes: "192x192 512x512",
             type: "image/svg+xml",
             purpose: "any",
           },
           {
-            src: "/icons/maskable.svg",
+            src: "/logo.svg",
             sizes: "192x192 512x512",
             type: "image/svg+xml",
             purpose: "maskable",

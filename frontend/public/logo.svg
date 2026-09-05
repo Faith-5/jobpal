@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" role="img" aria-labelledby="title">
+  <title>JobPal</title>
   <rect width="150" height="150" rx="38" fill="#2864df"/>
   <path fill="#fff" d="M39 34h64c11 0 20 9 20 20v30c0 11-9 20-20 20H62l-23 24 8-24h-8c-11 0-20-9-20-20V54c0-11 9-20 20-20Z"/>
   <path fill="none" stroke="#19ae82" stroke-linecap="round" stroke-linejoin="round" stroke-width="9" d="m44 66 16 15 36-36"/>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ScreenType, UserProfile } from '../types';
+import React, { useState } from "react";
+import { ScreenType, UserProfile } from "../types";
 
 interface SidebarProps {
   currentScreen: ScreenType;
@@ -17,12 +17,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const navItems: { screen: ScreenType; label: string; icon: string }[] = [
-    { screen: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { screen: 'profile', label: 'Profile', icon: 'account_circle' },
-    { screen: 'ats-score', label: 'ATS Score', icon: 'analytics' },
-    { screen: 'applications', label: 'Applications', icon: 'assignment_turned_in' },
-    { screen: 'documents', label: 'Documents', icon: 'folder_open' },
-    { screen: 'settings', label: 'Settings', icon: 'settings' },
+    { screen: "dashboard", label: "Dashboard", icon: "dashboard" },
+    { screen: "profile", label: "Profile", icon: "account_circle" },
+    { screen: "ats-score", label: "ATS Score", icon: "analytics" },
+    {
+      screen: "applications",
+      label: "Applications",
+      icon: "assignment_turned_in",
+    },
+    { screen: "documents", label: "Documents", icon: "folder_open" },
+    { screen: "settings", label: "Settings", icon: "settings" },
   ];
 
   const handleNavClick = (screen: ScreenType) => {
@@ -37,12 +41,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* ========================================================================= */}
       <header className="md:hidden bg-[#1c1b1b] border-b border-[#434655]/40 h-14 fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 select-none shadow-md">
         <div
-          onClick={() => handleNavClick('dashboard')}
+          onClick={() => handleNavClick("dashboard")}
           className="flex items-center gap-2 cursor-pointer"
         >
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#2563eb] to-[#38bdf8] flex items-center justify-center text-white font-bold text-[14px] shadow-sm">
-            JP
-          </div>
+          <img
+            src="/logo.svg"
+            alt=""
+            className="w-8 h-8 rounded-xl shadow-sm"
+          />
           <span className="font-headline text-[16px] font-bold text-white tracking-tight">
             JobPal AI
           </span>
@@ -50,11 +56,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handleNavClick('profile')}
+            onClick={() => handleNavClick("profile")}
             className="w-8 h-8 rounded-full overflow-hidden border border-[#8d90a0]/40 shrink-0"
             title="Go to Profile"
           >
-            <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+            <img
+              src={user.avatarUrl}
+              alt={user.name}
+              className="w-full h-full object-cover"
+            />
           </button>
 
           <button
@@ -64,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             aria-label="Toggle navigation menu"
           >
             <span className="material-symbols-outlined text-[20px]">
-              {mobileDrawerOpen ? 'close' : 'menu'}
+              {mobileDrawerOpen ? "close" : "menu"}
             </span>
           </button>
         </div>
@@ -82,17 +92,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="md:hidden fixed top-0 right-0 bottom-0 w-72 bg-[#1c1b1b] border-l border-[#434655]/50 z-50 flex flex-col p-5 shadow-2xl animate-fade-in">
             <div className="flex items-center justify-between pb-4 border-b border-[#434655]/40 mb-3">
               <div
-                onClick={() => handleNavClick('profile')}
+                onClick={() => handleNavClick("profile")}
                 className="flex items-center gap-3 cursor-pointer"
               >
                 <div className="w-10 h-10 rounded-full overflow-hidden border border-[#8d90a0]/40">
-                  <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <h4 className="font-headline text-[14px] font-bold text-white truncate max-w-[140px]">
                     {user.name}
                   </h4>
-                  <span className="text-[11px] text-[#4edea3] font-semibold">{user.plan}</span>
+                  <span className="text-[11px] text-[#4edea3] font-semibold">
+                    {user.plan}
+                  </span>
                 </div>
               </div>
 
@@ -100,7 +116,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => setMobileDrawerOpen(false)}
                 className="w-8 h-8 rounded-lg bg-[#201f1f] text-[#8d90a0] hover:text-white flex items-center justify-center"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <span className="material-symbols-outlined text-[18px]">
+                  close
+                </span>
               </button>
             </div>
 
@@ -113,13 +131,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => handleNavClick(item.screen)}
                     className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-headline text-[14px] font-semibold transition-all cursor-pointer text-left ${
                       isActive
-                        ? 'bg-[#2563eb] text-white shadow-md'
-                        : 'text-[#c3c6d7] hover:bg-[#201f1f] hover:text-white'
+                        ? "bg-[#2563eb] text-white shadow-md"
+                        : "text-[#c3c6d7] hover:bg-[#201f1f] hover:text-white"
                     }`}
                   >
                     <span
                       className="material-symbols-outlined text-[20px]"
-                      style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                      style={{
+                        fontVariationSettings: isActive
+                          ? "'FILL' 1"
+                          : "'FILL' 0",
+                      }}
                     >
                       {item.icon}
                     </span>
@@ -137,7 +159,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 className="w-full flex items-center gap-3.5 px-3.5 py-2.5 text-[#ffb4ab] hover:bg-red-950/30 rounded-xl transition-all font-headline text-[13.5px] font-semibold cursor-pointer text-left"
               >
-                <span className="material-symbols-outlined text-[20px]">logout</span>
+                <span className="material-symbols-outlined text-[20px]">
+                  logout
+                </span>
                 <span>Sign Out</span>
               </button>
             </div>
@@ -159,12 +183,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.screen}
               onClick={() => handleNavClick(item.screen)}
               className={`flex flex-col items-center justify-center flex-1 py-1 transition-all cursor-pointer ${
-                isActive ? 'text-[#38bdf8]' : 'text-[#8d90a0] hover:text-[#c3c6d7]'
+                isActive
+                  ? "text-[#38bdf8]"
+                  : "text-[#8d90a0] hover:text-[#c3c6d7]"
               }`}
             >
               <span
                 className="material-symbols-outlined text-[20px]"
-                style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                style={{
+                  fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                }}
               >
                 {item.icon}
               </span>
@@ -186,7 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* User / Brand Profile Area */}
         <div
           id="sidebar-user-header"
-          onClick={() => onNavigate('profile')}
+          onClick={() => onNavigate("profile")}
           className="flex items-center gap-3 mb-4 p-2 rounded-xl hover:bg-[#353534]/50 cursor-pointer transition-colors"
         >
           <div className="w-10 h-10 rounded-full bg-[#353534] flex items-center justify-center overflow-hidden shrink-0 border border-[#8d90a0]/30 shadow-md">
@@ -217,13 +245,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => onNavigate(item.screen)}
                 className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-headline text-[13px] font-semibold transition-all cursor-pointer text-left ${
                   isActive
-                    ? 'bg-[#3c4962] text-[#eeefff] shadow-inner scale-[0.99]'
-                    : 'text-[#c3c6d7] hover:bg-[#353534]/70 hover:text-[#e5e2e1]'
+                    ? "bg-[#3c4962] text-[#eeefff] shadow-inner scale-[0.99]"
+                    : "text-[#c3c6d7] hover:bg-[#353534]/70 hover:text-[#e5e2e1]"
                 }`}
               >
                 <span
                   className="material-symbols-outlined text-[20px]"
-                  style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                  style={{
+                    fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                  }}
                 >
                   {item.icon}
                 </span>
@@ -234,10 +264,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Footer Navigation */}
-        <div id="sidebar-footer-links" className="mt-auto border-t border-[#434655]/40 pt-2 space-y-1">
+        <div
+          id="sidebar-footer-links"
+          className="mt-auto border-t border-[#434655]/40 pt-2 space-y-1"
+        >
           <button
             id="nav-link-help"
-            onClick={() => alert('JobPal AI Help Center: Contact support@jobpal.ai or view our prompt tailoring guides.')}
+            onClick={() =>
+              alert(
+                "JobPal AI Help Center: Contact support@jobpal.ai or view our prompt tailoring guides.",
+              )
+            }
             className="w-full flex items-center gap-3.5 px-3.5 py-2 text-[#c3c6d7] hover:bg-[#353534]/70 hover:text-[#e5e2e1] rounded-xl transition-all font-headline text-[13px] font-semibold cursor-pointer text-left"
           >
             <span className="material-symbols-outlined text-[20px]">help</span>
@@ -248,7 +285,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={onSignOut}
             className="w-full flex items-center gap-3.5 px-3.5 py-2 text-[#c3c6d7] hover:bg-[#353534]/70 hover:text-[#ffb4ab] rounded-xl transition-all font-headline text-[13px] font-semibold cursor-pointer text-left"
           >
-            <span className="material-symbols-outlined text-[20px]">logout</span>
+            <span className="material-symbols-outlined text-[20px]">
+              logout
+            </span>
             <span>Sign Out</span>
           </button>
         </div>

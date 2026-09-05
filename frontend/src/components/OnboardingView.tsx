@@ -1,39 +1,43 @@
-import React, { useState } from 'react';
-import { ScreenType } from '../types';
+import React, { useState } from "react";
+import { ScreenType } from "../types";
 
 interface OnboardingViewProps {
   onNavigate: (screen: ScreenType) => void;
   onUploadSuccess: (filename: string) => void;
 }
 
-type OnboardingFlow = 'choose' | 'upload' | 'manual';
+type OnboardingFlow = "choose" | "upload" | "manual";
 type ManualStep = 1 | 2 | 3;
 
 export const OnboardingView: React.FC<OnboardingViewProps> = ({
   onNavigate,
   onUploadSuccess,
 }) => {
-  const [flow, setFlow] = useState<OnboardingFlow>('choose');
+  const [flow, setFlow] = useState<OnboardingFlow>("choose");
   const [manualStep, setManualStep] = useState<ManualStep>(1);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
 
   // Manual Form States
-  const [role, setRole] = useState('Project Manager');
+  const [role, setRole] = useState("Project Manager");
   const [summary, setSummary] = useState(
-    'Detail-oriented Project Manager with experience planning project timelines, coordinating cross-functional teams, and optimizing workflows to deliver projects on time.'
+    "Detail-oriented Project Manager with experience planning project timelines, coordinating cross-functional teams, and optimizing workflows to deliver projects on time.",
   );
-  const [company, setCompany] = useState('Apex Solutions');
-  const [jobTitle, setJobTitle] = useState('Associate Project Manager');
-  const [jobDates, setJobDates] = useState('2023 - Present');
+  const [company, setCompany] = useState("Apex Solutions");
+  const [jobTitle, setJobTitle] = useState("Associate Project Manager");
+  const [jobDates, setJobDates] = useState("2023 - Present");
   const [jobBullet, setJobBullet] = useState(
-    'Coordinated project schedules for 3 client deliverables, reducing project launch delays by 20%.'
+    "Coordinated project schedules for 3 client deliverables, reducing project launch delays by 20%.",
   );
-  const [skills, setSkills] = useState('Project Planning, Team Coordination, Microsoft Office, Agile Methodologies, Problem Solving');
-  const [projectTitle, setProjectTitle] = useState('Operations Database Upgrade');
+  const [skills, setSkills] = useState(
+    "Project Planning, Team Coordination, Microsoft Office, Agile Methodologies, Problem Solving",
+  );
+  const [projectTitle, setProjectTitle] = useState(
+    "Operations Database Upgrade",
+  );
   const [projectDesc, setProjectDesc] = useState(
-    'Led the migration of the internal communication database to a new cloud system, training 40+ employees on new software protocols.'
+    "Led the migration of the internal communication database to a new cloud system, training 40+ employees on new software protocols.",
   );
 
   // File Upload Handlers
@@ -62,25 +66,27 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
 
   // Submit Manual Flow
   const handleManualSubmit = () => {
-    onNavigate('dashboard');
+    onNavigate("dashboard");
   };
 
   // Pre-fill form with general-purpose business/operations sample data
   const loadSampleData = () => {
-    setRole('Operations Associate');
+    setRole("Operations Associate");
     setSummary(
-      'Motivated operations professional with 3+ years of experience analyzing operational data, managing logistics schedules, and coordinating customer support operations.'
+      "Motivated operations professional with 3+ years of experience analyzing operational data, managing logistics schedules, and coordinating customer support operations.",
     );
-    setCompany('Global Logistics Corp');
-    setJobTitle('Operations Coordinator');
-    setJobDates('2021 - 2024');
+    setCompany("Global Logistics Corp");
+    setJobTitle("Operations Coordinator");
+    setJobDates("2021 - 2024");
     setJobBullet(
-      'Improved supply chain dispatch efficiency by 15% through route analysis and coordinating driver dispatch schedules.'
+      "Improved supply chain dispatch efficiency by 15% through route analysis and coordinating driver dispatch schedules.",
     );
-    setSkills('Operations Coordination, Data Analysis, Logistics, Customer Service, Team Collaboration');
-    setProjectTitle('Fleet Tracking Migration');
+    setSkills(
+      "Operations Coordination, Data Analysis, Logistics, Customer Service, Team Collaboration",
+    );
+    setProjectTitle("Fleet Tracking Migration");
     setProjectDesc(
-      'Successfully implemented new tracking devices for 50 vehicles, managing scheduling and system training for the operations team.'
+      "Successfully implemented new tracking devices for 50 vehicles, managing scheduling and system training for the operations team.",
     );
   };
 
@@ -95,15 +101,14 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
       {/* Brand Header */}
       <div className="text-center max-w-xl mb-6 relative z-10">
         <button
-          onClick={() => onNavigate('landing')}
+          onClick={() => onNavigate("landing")}
           className="inline-flex items-center gap-2 mb-3 group cursor-pointer"
         >
-          <span
-            className="material-symbols-outlined text-[28px] text-[#93C5FD] group-hover:scale-105 transition-transform"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            work
-          </span>
+          <img
+            src="/logo.svg"
+            alt=""
+            className="w-8 h-8 rounded-lg group-hover:scale-105 transition-transform"
+          />
           <span className="font-headline text-[22px] font-bold text-[#93C5FD]">
             JobPal
           </span>
@@ -112,15 +117,15 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
           Let's build your profile
         </h1>
         <p className="font-body text-[15px] text-[#94A3B8]">
-          Choose the best way to get started. You can always change these details later.
+          Choose the best way to get started. You can always change these
+          details later.
         </p>
       </div>
 
       {/* Main Container */}
       <div className="w-full max-w-xl bg-[#0F172A] border border-[#1E293B]/70 rounded-2xl p-6 sm:p-8 shadow-2xl relative z-10 transition-all duration-300">
-        
         {/* Progress Bar (Visible during manual steps) */}
-        {flow === 'manual' && (
+        {flow === "manual" && (
           <div className="w-full bg-[#0B0F19] h-1.5 rounded-full mb-6 overflow-hidden">
             <div
               className="bg-blue-600 h-full transition-all duration-300"
@@ -130,61 +135,84 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
         )}
 
         {/* FLOW SELECTOR PANEL */}
-        {flow === 'choose' && (
+        {flow === "choose" && (
           <div className="space-y-4">
             {/* Option 1: Upload CV */}
             <button
-              onClick={() => setFlow('upload')}
+              onClick={() => setFlow("upload")}
               className="w-full text-left bg-[#0B0F19]/40 border border-[#1E293B] hover:border-blue-500/50 hover:bg-[#1E293B]/20 p-5 rounded-xl flex items-center gap-4 transition-all group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-lg bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-[#38BDF8] flex-shrink-0 group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[26px]">cloud_upload</span>
+                <span className="material-symbols-outlined text-[26px]">
+                  cloud_upload
+                </span>
               </div>
               <div className="flex-grow">
-                <h3 className="text-[16px] font-bold text-white mb-1">Upload my existing CV</h3>
-                <p className="text-[13px] text-[#94A3B8]">We will parse your PDF or Word document and extract your history.</p>
+                <h3 className="text-[16px] font-bold text-white mb-1">
+                  Upload my existing CV
+                </h3>
+                <p className="text-[13px] text-[#94A3B8]">
+                  We will parse your PDF or Word document and extract your
+                  history.
+                </p>
               </div>
             </button>
 
             {/* Option 2: Fill Manually */}
             <button
-              onClick={() => setFlow('manual')}
+              onClick={() => setFlow("manual")}
               className="w-full text-left bg-[#0B0F19]/40 border border-[#1E293B] hover:border-blue-500/50 hover:bg-[#1E293B]/20 p-5 rounded-xl flex items-center gap-4 transition-all group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-lg bg-emerald-600/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0 group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[26px]">edit_note</span>
+                <span className="material-symbols-outlined text-[26px]">
+                  edit_note
+                </span>
               </div>
               <div className="flex-grow">
-                <h3 className="text-[16px] font-bold text-white mb-1">Create profile manually</h3>
-                <p className="text-[13px] text-[#94A3B8]">Don't have a CV on hand? Fill in your key details step-by-step.</p>
+                <h3 className="text-[16px] font-bold text-white mb-1">
+                  Create profile manually
+                </h3>
+                <p className="text-[13px] text-[#94A3B8]">
+                  Don't have a CV on hand? Fill in your key details
+                  step-by-step.
+                </p>
               </div>
             </button>
 
             {/* Option 3: Skip Onboarding */}
             <button
-              onClick={() => onNavigate('dashboard')}
+              onClick={() => onNavigate("dashboard")}
               className="w-full text-left bg-[#0B0F19]/40 border border-[#1E293B] hover:border-blue-500/50 hover:bg-[#1E293B]/20 p-5 rounded-xl flex items-center gap-4 transition-all group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-lg bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 flex-shrink-0 group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[26px]">arrow_forward</span>
+                <span className="material-symbols-outlined text-[26px]">
+                  arrow_forward
+                </span>
               </div>
               <div className="flex-grow">
-                <h3 className="text-[16px] font-bold text-white mb-1">Skip onboarding for now</h3>
-                <p className="text-[13px] text-[#94A3B8]">Go straight to your dashboard. You can add or update your qualifications later.</p>
+                <h3 className="text-[16px] font-bold text-white mb-1">
+                  Skip onboarding for now
+                </h3>
+                <p className="text-[13px] text-[#94A3B8]">
+                  Go straight to your dashboard. You can add or update your
+                  qualifications later.
+                </p>
               </div>
             </button>
 
             {/* In-box Hint Note */}
             <div className="border-t border-[#1E293B] pt-4 mt-2 text-center">
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                Short on time? No worries. You can skip onboarding now and fill or update your qualifications inside your profile dashboard anytime.
+                Short on time? No worries. You can skip onboarding now and fill
+                or update your qualifications inside your profile dashboard
+                anytime.
               </p>
             </div>
           </div>
         )}
 
         {/* UPLOAD FLOW */}
-        {flow === 'upload' && (
+        {flow === "upload" && (
           <div className="space-y-4">
             <div
               id="dropzone-cv"
@@ -196,10 +224,10 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
               onDrop={handleFileDrop}
               className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
                 isDragging
-                  ? 'border-blue-400 bg-blue-600/10 scale-[1.01]'
-                  : 'border-[#1E293B] hover:border-slate-500 hover:bg-[#1E293B]/20'
+                  ? "border-blue-400 bg-blue-600/10 scale-[1.01]"
+                  : "border-[#1E293B] hover:border-slate-500 hover:bg-[#1E293B]/20"
               }`}
-              onClick={() => document.getElementById('cv-file-input')?.click()}
+              onClick={() => document.getElementById("cv-file-input")?.click()}
             >
               <input
                 id="cv-file-input"
@@ -221,22 +249,29 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
               ) : (
                 <>
                   <div className="w-14 h-14 rounded-full bg-[#1E293B] flex items-center justify-center mb-3 text-[#93C5FD]">
-                    <span className="material-symbols-outlined text-[28px]">cloud_upload</span>
+                    <span className="material-symbols-outlined text-[28px]">
+                      cloud_upload
+                    </span>
                   </div>
                   <h3 className="font-headline text-[17px] font-semibold text-white mb-1">
                     Upload your CV
                   </h3>
                   <p className="font-body text-[13px] text-[#94A3B8] mb-1">
-                    Drag & drop here or <span className="text-[#93C5FD] underline font-medium">browse</span>
+                    Drag & drop here or{" "}
+                    <span className="text-[#93C5FD] underline font-medium">
+                      browse
+                    </span>
                   </p>
-                  <span className="text-[11px] text-slate-500">PDF, DOCX up to 10MB</span>
+                  <span className="text-[11px] text-slate-500">
+                    PDF, DOCX up to 10MB
+                  </span>
                 </>
               )}
             </div>
 
             <div className="flex justify-start items-center pt-2">
               <button
-                onClick={() => setFlow('choose')}
+                onClick={() => setFlow("choose")}
                 className="text-[13px] text-[#94A3B8] hover:text-white font-medium cursor-pointer flex items-center gap-1"
               >
                 <span>← Back to options</span>
@@ -246,9 +281,8 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
         )}
 
         {/* MANUAL FLOW (General-purpose step-by-step layout) */}
-        {flow === 'manual' && (
+        {flow === "manual" && (
           <div className="space-y-4">
-            
             {/* STEP 1: TARGET ROLE & OBJECTIVE SUMMARY */}
             {manualStep === 1 && (
               <div className="space-y-4">
@@ -262,7 +296,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                       onClick={loadSampleData}
                       className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1"
                     >
-                      <span className="material-symbols-outlined text-[12px]">bolt</span>
+                      <span className="material-symbols-outlined text-[12px]">
+                        bolt
+                      </span>
                       Fill with sample data
                     </button>
                   </div>
@@ -399,7 +435,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                 type="button"
                 onClick={() => {
                   if (manualStep === 1) {
-                    setFlow('choose');
+                    setFlow("choose");
                   } else {
                     setManualStep((prev) => (prev - 1) as any);
                   }
@@ -431,7 +467,6 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
