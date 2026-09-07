@@ -1,6 +1,15 @@
 import { ResumeParseResponse } from '../types';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api/v1';
+function getApiBaseUrl(): string {
+  let url = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api/v1';
+  url = url.trim().replace(/\/+$/, '');
+  if (!url.endsWith('/api/v1')) {
+    url = `${url}/api/v1`;
+  }
+  return url;
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export async function parseResumeFile(file: File): Promise<ResumeParseResponse> {
   const formData = new FormData();
