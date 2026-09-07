@@ -116,16 +116,6 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                 arrow_forward
               </span>
             </button>
-            <button
-              id="hero-demo-dashboard-btn"
-              onClick={() => onNavigate("dashboard")}
-              className="px-8 py-4 rounded-full border border-[#1E293B] bg-[#1E293B]/30 text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/60 font-headline text-[14px] font-semibold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
-            >
-              <span>Launch Sandbox Demo</span>
-              <span className="material-symbols-outlined text-[18px]">
-                play_circle
-              </span>
-            </button>
           </div>
         </section>
 
