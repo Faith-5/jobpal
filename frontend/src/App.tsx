@@ -6,6 +6,7 @@ import {
   CoverLetterData,
   JobApplication,
   TailoredCvData,
+  ParsedCareerProfile,
 } from './types';
 import {
   INITIAL_USER,
@@ -146,6 +147,64 @@ export function App() {
     }));
   };
 
+  // Commit AI-parsed career profile to UserProfile and TailoredCv
+  const handleApplyParsedProfile = (parsed: ParsedCareerProfile) => {
+    const experiences = (parsed.experiences || []).map((exp) => ({
+      id: exp.id || Math.random().toString(),
+      company: exp.company,
+      role: exp.role,
+      location: exp.location || '',
+      dates: exp.dates,
+      bullets: exp.bullets || [],
+    }));
+
+    const education = (parsed.education || []).map((edu) => ({
+      id: edu.id || Math.random().toString(),
+      school: edu.institution,
+      degree: edu.degree,
+      dates: edu.dates,
+      fieldOfStudy: edu.fieldOfStudy || '',
+    }));
+
+    setUser((prev) => ({
+      ...prev,
+      name: parsed.contact.name || prev.name,
+      role: parsed.contact.role || prev.role,
+      email: parsed.contact.email || prev.email,
+      phone: parsed.contact.phone || prev.phone,
+      location: parsed.contact.location || prev.location,
+      state: parsed.contact.state || prev.state,
+      country: parsed.contact.country || prev.country,
+      bio: parsed.summary || prev.bio,
+      skills: parsed.allSkills && parsed.allSkills.length > 0 ? parsed.allSkills : prev.skills,
+      experienceLevel: parsed.detectedSeniority === 'senior' ? 'senior' : parsed.detectedSeniority === 'junior' ? 'junior' : 'mid',
+      experienceCount: experiences.length || prev.experienceCount,
+      educationCount: education.length || prev.educationCount,
+      projectsCount: (parsed.projects || []).length || prev.projectsCount,
+      experiences: experiences.length > 0 ? experiences : prev.experiences,
+      education: education.length > 0 ? education : prev.education,
+      certifications: (parsed.certifications && parsed.certifications.length > 0) ? parsed.certifications : prev.certifications,
+      projects: (parsed.projects && parsed.projects.length > 0) ? parsed.projects : prev.projects,
+      languages: (parsed.languages && parsed.languages.length > 0) ? parsed.languages : prev.languages,
+    }));
+
+    setTailoredCv((prev) => ({
+      ...prev,
+      name: parsed.contact.name || prev.name,
+      role: parsed.contact.role || prev.role,
+      email: parsed.contact.email || prev.email,
+      phone: parsed.contact.phone || prev.phone,
+      location: parsed.contact.location || prev.location,
+      summary: parsed.summary || prev.summary,
+      skills: parsed.allSkills && parsed.allSkills.length > 0 ? parsed.allSkills : prev.skills,
+      experiences: experiences.length > 0 ? experiences : prev.experiences,
+      education: education.length > 0 ? education : prev.education,
+    }));
+
+    showToast(`Career profile successfully parsed & synchronized for ${parsed.contact.name || 'your profile'}!`);
+    setCurrentScreen('profile');
+  };
+
   // Auth & Navigation handlers
   const handleLoginSuccess = (email: string) => {
     setUser((prev) => ({ ...prev, email }));
@@ -161,7 +220,7 @@ export function App() {
 
   const handleUploadSuccess = (filename: string) => {
     showToast(`Successfully extracted career data from "${filename}"`);
-    setCurrentScreen('dashboard');
+    setCurrentScreen('profile');
   };
 
   // ATS Suggestions toggle actions
@@ -463,6 +522,7 @@ export function App() {
             <OnboardingView
               onNavigate={setCurrentScreen}
               onUploadSuccess={handleUploadSuccess}
+              onParsedProfileReady={handleApplyParsedProfile}
             />
           )}
         </div>
@@ -483,3 +543,4 @@ export function App() {
 }
 
 export default App;
+

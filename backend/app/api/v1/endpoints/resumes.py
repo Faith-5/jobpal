@@ -1,4 +1,5 @@
 import io
+import time
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from fastapi.responses import StreamingResponse
@@ -7,11 +8,89 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.models.user import User
 from app.models.resume import Resume
-from app.schemas.resume import ResumeOut, SuggestionItem
+from app.schemas.resume import ResumeOut
+from app.schemas.career_profile import ResumeParseResponse, ParsedCareerProfile
 from app.services.pdf_service import pdf_service
+from app.services.extractor_service import extractor_service
 from app.services.groq_service import groq_service
 
 router = APIRouter()
+
+@router.post("/parse-and-extract", response_model=ResumeParseResponse)
+async def parse_and_extract_career_profile(
+    file: Optional[UploadFile] = File(None),
+    raw_text: Optional[str] = Form(None),
+    filename: Optional[str] = Form(None)
+):
+    """
+    Step 1 Engine Endpoint: Multi-Modal Ingestion & AI Career Profile Extraction.
+    Accepts a PDF, DOCX, or TXT file (or direct pasted text) and runs Groq LLaMA 3.3 70B
+    to return a rich, normalized JSON career profile ready for application state integration.
+    """
+    start_time = time.time()
+    
+    extracted_text = ""
+    detected_type = "text"
+    resolved_filename = filename or "pasted_resume.txt"
+
+    try:
+        if file and file.filename:
+            resolved_filename = file.filename
+            contents = await file.read()
+            if not contents:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Uploaded file is empty."
+                )
+            extracted_text, detected_type = extractor_service.extract_document(resolved_filename, contents)
+        elif raw_text and raw_text.strip():
+            extracted_text = extractor_service.clean_and_normalize_text(raw_text)
+            detected_type = "raw_text"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please upload a resume file (PDF, DOCX, TXT) or provide raw resume text."
+            )
+
+        if not extracted_text or len(extracted_text.strip()) < 10:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Could not extract legible text from the provided document. Please check the file format."
+            )
+
+        # Execute Groq LLaMA 70B parsing
+        parsed_dict = groq_service.parse_resume_to_career_profile(extracted_text, resolved_filename)
+        
+        # Validate into Pydantic schema
+        profile = ParsedCareerProfile(**parsed_dict)
+        
+        elapsed_ms = int((time.time() - start_time) * 1000)
+
+        return ResumeParseResponse(
+            success=True,
+            filename=resolved_filename,
+            file_type=detected_type,
+            character_count=len(extracted_text),
+            raw_text_preview=extracted_text[:400] + ("..." if len(extracted_text) > 400 else ""),
+            profile=profile,
+            metadata={
+                "model": "llama-3.3-70b-versatile",
+                "latency_ms": elapsed_ms,
+                "experiences_count": len(profile.experiences),
+                "skills_count": len(profile.allSkills),
+                "education_count": len(profile.education),
+                "groq_active": bool(groq_service.client is not None)
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        elapsed_ms = int((time.time() - start_time) * 1000)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Career extraction engine failure: {str(e)}"
+        )
 
 @router.post("/upload", response_model=ResumeOut)
 async def upload_and_analyze_resume(
@@ -22,25 +101,17 @@ async def upload_and_analyze_resume(
     current_user: User = Depends(deps.get_current_user)
 ):
     """
-    Upload a resume PDF, extract its text, run ATS analysis against a job description,
+    Upload a resume file, extract its text, run ATS analysis against a target job description,
     and save the resume data linked to the current user.
     """
-    if not file.filename.endswith('.pdf'):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only PDF files are supported."
-        )
-
     try:
         contents = await file.read()
+        extracted_text, _ = extractor_service.extract_document(file.filename, contents)
         
-        # 1. Extract text from PDF
-        extracted_text = pdf_service.extract_text_from_pdf(contents)
-        
-        # 2. Analyze using Groq service (with mock fallback if no API key is set)
+        # Analyze using Groq service
         analysis = groq_service.analyze_resume(extracted_text, job_description)
         
-        # 3. Save Resume & Analysis to DB
+        # Save Resume & Analysis to DB
         resume = Resume(
             user_id=current_user.id,
             title=file.filename,
@@ -83,14 +154,13 @@ def get_my_resumes(
 
 @router.post("/generate-pdf")
 def download_custom_cv_pdf(
-    cv_data: dict,  # Receives arbitrary structured CV JSON representing skills, exp, edu
+    cv_data: dict,
     current_user: User = Depends(deps.get_current_user)
 ):
     """
     Generate a professional ReportLab PDF from custom CV details and return it as a download stream.
     """
     try:
-        # Prepopulate with user details if not provided in JSON
         if "name" not in cv_data:
             cv_data["name"] = current_user.name
         if "email" not in cv_data:
@@ -104,10 +174,8 @@ def download_custom_cv_pdf(
         if "role" not in cv_data:
             cv_data["role"] = current_user.role
 
-        # Generate PDF Bytes
         pdf_bytes = pdf_service.generate_cv_pdf(cv_data)
         
-        # Return as streaming attachment
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",

@@ -169,3 +169,78 @@ export interface AtsBreakdown {
   targetRole: string;
   suggestions: SuggestionItem[];
 }
+
+export interface ParsedContactInfo {
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  location?: string;
+  linkedin?: string;
+  github?: string;
+  portfolio?: string;
+}
+
+export interface ParsedSkillCategory {
+  category: string;
+  skills: string[];
+}
+
+export interface ParsedCareerExperience {
+  id: string;
+  company: string;
+  role: string;
+  location?: string;
+  dates: string;
+  isCurrent?: boolean;
+  bullets: string[];
+  metrics?: string[];
+  technologies?: string[];
+}
+
+export interface ParsedCareerEducation {
+  id: string;
+  institution: string;
+  degree: string;
+  fieldOfStudy?: string;
+  dates: string;
+  gpa?: string;
+  highlights?: string[];
+}
+
+export interface ParsedCareerProfile {
+  contact: ParsedContactInfo;
+  summary: string;
+  allSkills: string[];
+  skillCategories: ParsedSkillCategory[];
+  experiences: ParsedCareerExperience[];
+  education: ParsedCareerEducation[];
+  certifications: ProfileCertification[];
+  projects: ProfileProject[];
+  languages: ProfileLanguage[];
+  detectedSeniority: 'junior' | 'mid' | 'senior' | 'lead';
+  totalYearsExperience?: number;
+  _engine_model?: string;
+}
+
+export interface ResumeParseResponse {
+  success: boolean;
+  filename: string;
+  file_type: string;
+  character_count: number;
+  raw_text_preview: string;
+  profile: ParsedCareerProfile;
+  metadata?: {
+    model?: string;
+    latency_ms?: number;
+    experiences_count?: number;
+    skills_count?: number;
+    education_count?: number;
+    groq_active?: boolean;
+    [key: string]: any;
+  };
+}
+
