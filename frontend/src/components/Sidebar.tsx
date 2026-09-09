@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ScreenType, UserProfile } from "../types";
+import { usePWAInstallPrompt } from "../pwa";
 
 interface SidebarProps {
   currentScreen: ScreenType;
@@ -15,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSignOut,
 }) => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const { isInstallable, promptInstall } = usePWAInstallPrompt();
 
   const navItems: { screen: ScreenType; label: string; icon: string }[] = [
     { screen: "dashboard", label: "Dashboard", icon: "dashboard" },
@@ -55,6 +57,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {isInstallable && (
+            <button
+              onClick={promptInstall}
+              id="btn-mobile-pwa-install"
+              className="bg-blue-600/90 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+              title="Install JobPal App"
+            >
+              <span className="material-symbols-outlined text-[15px]">download</span>
+              <span>Install</span>
+            </button>
+          )}
+
           <button
             onClick={() => handleNavClick("profile")}
             className="w-8 h-8 rounded-full overflow-hidden border border-[#8d90a0]/40 shrink-0"
@@ -152,6 +166,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </nav>
 
             <div className="pt-3 border-t border-[#434655]/40 space-y-1">
+              {isInstallable && (
+                <button
+                  id="btn-drawer-pwa-install"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    promptInstall();
+                  }}
+                  className="w-full flex items-center gap-3.5 px-3.5 py-2.5 bg-blue-600/20 text-blue-300 hover:bg-blue-600/30 rounded-xl transition-all font-headline text-[13.5px] font-semibold cursor-pointer text-left border border-blue-500/30"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    download
+                  </span>
+                  <span>Install JobPal App</span>
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   setMobileDrawerOpen(false);
@@ -268,6 +298,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id="sidebar-footer-links"
           className="mt-auto border-t border-[#434655]/40 pt-2 space-y-1"
         >
+          {isInstallable && (
+            <button
+              id="sidebar-pwa-install-btn"
+              onClick={promptInstall}
+              className="w-full flex items-center gap-3.5 px-3.5 py-2 text-[#93c5fd] hover:bg-[#2563eb]/20 hover:text-white rounded-xl transition-all font-headline text-[13px] font-semibold cursor-pointer text-left border border-[#2563eb]/30"
+            >
+              <span className="material-symbols-outlined text-[20px] text-[#60a5fa]">
+                download
+              </span>
+              <span>Install Desktop App</span>
+            </button>
+          )}
+
           <button
             id="nav-link-help"
             onClick={() =>

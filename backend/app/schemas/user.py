@@ -7,7 +7,7 @@ class UserBase(BaseModel):
     phone: Optional[str] = None
     state: Optional[str] = None
     country: Optional[str] = None
-    primaryGoal: Optional[Literal['actively_searching', 'exploring']] = "actively_searching"
+    primaryGoal: Optional[Literal['actively_searching', 'career_pivot', 'exploring']] = "actively_searching"
     role: Optional[str] = None
     avatarUrl: Optional[str] = None
     skills: List[str] = []
@@ -22,7 +22,7 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     state: Optional[str] = None
     country: Optional[str] = None
-    primaryGoal: Optional[Literal['actively_searching', 'exploring']] = None
+    primaryGoal: Optional[Literal['actively_searching', 'career_pivot', 'exploring']] = None
     role: Optional[str] = None
     avatarUrl: Optional[str] = None
     skills: Optional[List[str]] = None

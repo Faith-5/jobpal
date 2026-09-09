@@ -29,6 +29,14 @@ import { ApplicationsView } from './components/ApplicationsView';
 import { DocumentsView } from './components/DocumentsView';
 import { SettingsView } from './components/SettingsView';
 import { EditProfileModal } from './components/EditProfileModal';
+import { PwaInstallBanner } from './components/PwaInstallBanner';
+import { initPWARegistration } from './pwa';
+import {
+  getStoredUserSession,
+  saveStoredUserSession,
+  clearUserSession,
+  getCurrentUser,
+} from './services/api';
 
 const SCREEN_TO_PATH: Record<ScreenType, string> = {
   landing: '/',
@@ -73,7 +81,10 @@ const APP_SCREENS = new Set<ScreenType>([
 
 export function App() {
   const [currentScreen, setCurrentScreenState] = useState<ScreenType>('landing');
-  const [user, setUser] = useState<UserProfile>(INITIAL_USER);
+  const [user, setUser] = useState<UserProfile>(() => {
+    const saved = getStoredUserSession();
+    return saved ? { ...INITIAL_USER, ...saved } : INITIAL_USER;
+  });
   const [atsData, setAtsData] = useState<AtsBreakdown>(INITIAL_ATS_DATA);
   const [tailoredCv, setTailoredCv] = useState<TailoredCvData>(INITIAL_TAILORED_CV);
   const [coverLetter, setCoverLetter] = useState<CoverLetterData>(INITIAL_COVER_LETTER);
@@ -82,6 +93,31 @@ export function App() {
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
+
+  // PWA Service Worker Update State
+  const [needRefresh, setNeedRefresh] = useState(false);
+  const [updateSWFn, setUpdateSWFn] = useState<(() => void) | null>(null);
+
+  // Initialize PWA Service Worker Registration
+  useEffect(() => {
+    const update = initPWARegistration(
+      () => setNeedRefresh(true),
+      () => showToast('JobPal is ready for offline use!')
+    );
+    if (update) {
+      setUpdateSWFn(() => () => update(true));
+    }
+  }, []);
+
+  // Check stored user profile from server if online
+  useEffect(() => {
+    getCurrentUser().then((remoteUser) => {
+      if (remoteUser) {
+        setUser((prev) => ({ ...prev, ...remoteUser }));
+        saveStoredUserSession(remoteUser);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Theme Management (Dark / Light Mode)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -206,14 +242,26 @@ export function App() {
   };
 
   // Auth & Navigation handlers
-  const handleLoginSuccess = (email: string) => {
-    setUser((prev) => ({ ...prev, email }));
-    showToast(`Signed in successfully as ${user.name}`);
+  const handleLoginSuccess = (email: string, userDetails?: Partial<UserProfile>) => {
+    setUser((prev) => {
+      const updated = {
+        ...prev,
+        email,
+        ...(userDetails || {}),
+      };
+      saveStoredUserSession(updated);
+      return updated;
+    });
+    showToast(`Welcome back, ${userDetails?.name || user.name || 'User'}!`);
     setCurrentScreen('dashboard');
   };
 
   const handleSignUpSuccess = (userData: Partial<UserProfile>) => {
-    setUser((prev) => ({ ...prev, ...userData }));
+    setUser((prev) => {
+      const updated = { ...prev, ...userData };
+      saveStoredUserSession(updated);
+      return updated;
+    });
     showToast(`Account created for ${userData.name || 'you'}!`);
     setCurrentScreen('onboarding');
   };
@@ -312,6 +360,8 @@ export function App() {
   };
 
   const handleConfirmSignOut = () => {
+    clearUserSession();
+    setUser(INITIAL_USER);
     setShowSignOutConfirm(false);
     showToast('Signed out of JobPal AI.');
     setCurrentScreen('landing');
@@ -321,6 +371,13 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-[#131313] text-[#e5e2e1] font-body flex flex-col relative selection:bg-[#2563eb] selection:text-white">
+      {/* PWA Install & Offline Banner */}
+      <PwaInstallBanner
+        onNeedRefresh={needRefresh}
+        onRefreshClick={() => {
+          if (updateSWFn) updateSWFn();
+        }}
+      />
       {/* Toast Notification */}
       {toastMessage && (
         <div
