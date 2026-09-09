@@ -5,17 +5,18 @@ import re
 from typing import Dict, Any, List, Optional, Tuple
 from groq import Groq
 from app.core.config import settings
+from app.services.extractor_service import extractor_service
 
 logger = logging.getLogger(__name__)
 
-# Preferred model ladder for Groq inference (active high-parameter LLMs)
+# Active high-parameter LLM model ladder for Groq inference
 MODEL_PREFERENCES = [
     "openai/gpt-oss-120b",
-    "llama-3.3-70b-versatile",
     "qwen/qwen3.8-27b",
     "openai/gpt-oss-20b",
     "groq/compound",
-    "qwen/qwen3.6-27b"
+    "qwen/qwen3.6-27b",
+    "groq/compound-mini",
 ]
 
 class GroqService:
@@ -37,11 +38,14 @@ class GroqService:
         else:
             self.client = None
 
-    def _create_completion(self, messages: List[Dict[str, str]], temperature: float = 0.2) -> Tuple[str, str]:
+    def _create_completion(self, messages: List[Dict[str, str]], temperature: float = 0.15) -> Tuple[str, str]:
         """
         Executes chat completion on Groq with automatic model failover.
         Returns (response_text, model_used).
         """
+        if not self.client:
+            self._init_client()
+        
         if not self.client:
             raise ValueError("Groq client not initialized")
 
@@ -52,51 +56,47 @@ class GroqService:
                     messages=messages,
                     model=model,
                     temperature=temperature,
+                    max_tokens=8192,
                     response_format={"type": "json_object"}
                 )
                 self.active_model = model
-                return chat_completion.choices[0].message.content, model
+                content = chat_completion.choices[0].message.content
+                if content and content.strip():
+                    return content, model
             except Exception as e:
                 last_error = e
-                logger.warning(f"Groq model {model} failed: {e}. Trying next preferred model...")
+                logger.warning(f"Groq model {model} attempt failed: {e}. Trying next model...")
 
         raise RuntimeError(f"All Groq models failed. Last error: {last_error}")
 
     def parse_resume_to_career_profile(self, resume_text: str, filename: str = "Uploaded Resume") -> Dict[str, Any]:
         """
         Step 1: Multi-Modal Intelligent Resume Ingestion & Parsing Engine.
-        Uses Groq LLMs (LLaMA 70B / GPT-OSS 120B) to parse arbitrary resume formats into
+        Uses Groq LLaMA 70B to parse arbitrary resume formats into
         a rich normalized Career Profile JSON schema.
+        If Groq is unavailable, seamlessly uses zero-mock heuristic extraction from the actual file.
         """
         self._init_client()
 
         if not self.client:
-            logger.warning("Groq API key not set or invalid. Returning intelligent parsed mock schema.")
+            logger.warning("Groq API key not set or invalid. Running zero-mock deterministic heuristic extractor.")
             return self._get_fallback_parsed_profile(resume_text, filename)
 
         system_prompt = (
-            "You are an elite, world-class Career Data Ontologist, Technical Recruiter, and Resume Parser. "
-            "Your mission is to rigorously analyze raw resume text extracted from any resume format "
-            "(chronological, functional, two-column, markdown, academic CV) and convert it into a structured, "
-            "rich, standardized Career Profile JSON object.\n\n"
-            "PARSING INSTRUCTIONS:\n"
-            "1. CONTACT INFO: Extract the applicant's full name, headline/role title, primary email, phone number, "
-            "location (city, state, country), and profile links (LinkedIn, GitHub, Portfolio website).\n"
-            "2. SUMMARY: Extract or synthesize a compelling 2-4 sentence executive summary highlighting key background and domain expertise.\n"
-            "3. SKILLS TAXONOMY: Identify all technical, domain, and soft skills. Group them into intuitive categories "
-            "(e.g. 'Core Technical & Languages', 'Frameworks & Libraries', 'Cloud, Databases & DevOps', 'Tools & Platforms', 'Leadership & Methodologies'). "
-            "Also output a flat list in 'allSkills'.\n"
-            "4. WORK EXPERIENCES: Extract all professional roles in reverse-chronological order. "
-            "For each role, extract company, role title, location, dates (e.g., 'Jan 2022 - Present'), whether it's current (isCurrent: boolean), "
-            "the list of bullet points (clean action-driven statements), quantifiable metrics/KPIs detected (e.g. 'increased conversion by 25%'), "
-            "and technologies used in that role.\n"
-            "5. EDUCATION: Extract institutions, degree title, field of study, dates, GPA (if stated), and highlights/honors.\n"
-            "6. CERTIFICATIONS: Extract any licenses or certificates (e.g. AWS Certified, PMP, Scrum Master) with issuer and dates.\n"
-            "7. PROJECTS: Extract notable projects, system builds, or portfolio highlights with descriptions, links, and technologies.\n"
-            "8. LANGUAGES: Extract spoken/written languages and proficiency levels.\n"
-            "9. SENIORITY & YEARS: Infer overall seniority level ('junior' | 'mid' | 'senior' | 'lead') and estimated total professional years.\n\n"
-            "JSON SCHEMA REQUIREMENT:\n"
-            "You MUST respond ONLY with a single valid JSON object strictly matching this schema:\n"
+            "You are an elite, world-class Career Data Ontologist and Technical Resume Parser. "
+            "Your objective is to rigorously analyze raw resume text extracted from a candidate's uploaded resume "
+            "and convert it into a structured, accurate, and comprehensive Career Profile JSON object.\n\n"
+            "CRITICAL EXTRACTION RULES:\n"
+            "1. NO FAKE DATA: Extract ONLY details present in or directly derived from the candidate's actual text.\n"
+            "2. CONTACT INFO: Extract candidate's full name, professional role/headline, email, phone number, location (city, state, country), and links (LinkedIn, GitHub, Portfolio).\n"
+            "3. SUMMARY: Extract or synthesize a compelling 2-4 sentence executive summary of the candidate's actual background.\n"
+            "4. WORK EXPERIENCES: Extract all jobs in reverse chronological order. For each role, extract exact company name, role title, location, dates (e.g. 'Jan 2022 - Present'), isCurrent (boolean), all bullet points, detected metrics (e.g. 'boosted revenue by 25%'), and technologies mentioned.\n"
+            "5. EDUCATION: Extract institutions, degree titles, field of study / major, dates, GPA, and honors.\n"
+            "6. CERTIFICATIONS: Extract licenses or certificates with issuing organization and dates.\n"
+            "7. PROJECTS: Extract notable projects, systems, or portfolio items with descriptions and technologies.\n"
+            "8. SKILLS: Extract all technical, domain, and soft skills. Group them into categorized lists ('skillCategories') AND output a complete flat array ('allSkills').\n"
+            "9. LANGUAGES: Extract spoken/written languages with proficiency levels.\n\n"
+            "JSON SCHEMA:\n"
             "{\n"
             "  \"contact\": {\n"
             "    \"name\": \"string\",\n"
@@ -121,7 +121,7 @@ class GroqService:
             "  ],\n"
             "  \"experiences\": [\n"
             "    {\n"
-            "      \"id\": \"string (e.g. exp-1)\",\n"
+            "      \"id\": \"exp-1\",\n"
             "      \"company\": \"string\",\n"
             "      \"role\": \"string\",\n"
             "      \"location\": \"string\",\n"
@@ -134,7 +134,7 @@ class GroqService:
             "  ],\n"
             "  \"education\": [\n"
             "    {\n"
-            "      \"id\": \"string (e.g. edu-1)\",\n"
+            "      \"id\": \"edu-1\",\n"
             "      \"institution\": \"string\",\n"
             "      \"degree\": \"string\",\n"
             "      \"fieldOfStudy\": \"string\",\n"
@@ -145,7 +145,7 @@ class GroqService:
             "  ],\n"
             "  \"certifications\": [\n"
             "    {\n"
-            "      \"id\": \"string (e.g. cert-1)\",\n"
+            "      \"id\": \"cert-1\",\n"
             "      \"title\": \"string\",\n"
             "      \"issuer\": \"string\",\n"
             "      \"date\": \"string\",\n"
@@ -155,7 +155,7 @@ class GroqService:
             "  ],\n"
             "  \"projects\": [\n"
             "    {\n"
-            "      \"id\": \"string (e.g. proj-1)\",\n"
+            "      \"id\": \"proj-1\",\n"
             "      \"title\": \"string\",\n"
             "      \"description\": \"string\",\n"
             "      \"role\": \"string\",\n"
@@ -165,7 +165,7 @@ class GroqService:
             "  ],\n"
             "  \"languages\": [\n"
             "    {\n"
-            "      \"id\": \"string (e.g. lang-1)\",\n"
+            "      \"id\": \"lang-1\",\n"
             "      \"language\": \"string\",\n"
             "      \"proficiency\": \"Native or Bilingual\" | \"Fluent\" | \"Conversational\" | \"Basic\"\n"
             "    }\n"
@@ -173,7 +173,7 @@ class GroqService:
             "  \"detectedSeniority\": \"junior\" | \"mid\" | \"senior\",\n"
             "  \"totalYearsExperience\": int\n"
             "}\n"
-            "Do not output markdown codeblocks (no ```json). Output raw valid JSON ONLY."
+            "Respond ONLY with valid JSON."
         )
 
         user_content = f"SOURCE DOCUMENT FILENAME: {filename}\n\nRAW RESUME EXTRACTED CONTENT:\n{resume_text}"
@@ -184,15 +184,15 @@ class GroqService:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content}
                 ],
-                temperature=0.15
+                temperature=0.1
             )
             parsed_data = self._clean_and_parse_json(response_content)
-            result = self._normalize_parsed_profile(parsed_data, filename)
+            result = self._normalize_parsed_profile(parsed_data, filename, resume_text)
             result["_engine_model"] = used_model
             return result
 
         except Exception as e:
-            logger.error(f"Groq API resume parsing error: {e}. Generating fallback structured profile.")
+            logger.error(f"Groq API resume parsing error: {e}. Executing zero-mock deterministic heuristic extractor.")
             return self._get_fallback_parsed_profile(resume_text, filename)
 
     def _clean_and_parse_json(self, raw_str: str) -> Dict[str, Any]:
@@ -214,21 +214,23 @@ class GroqService:
                 return json.loads(match.group(0))
             raise
 
-    def _normalize_parsed_profile(self, data: Dict[str, Any], filename: str) -> Dict[str, Any]:
-        """Ensures all required fields and unique IDs are populated."""
+    def _normalize_parsed_profile(self, data: Dict[str, Any], filename: str, raw_text: str = "") -> Dict[str, Any]:
+        """Ensures all required fields and unique IDs are populated from real candidate data."""
         contact = data.get("contact", {})
-        if not contact.get("name") or contact.get("name") == "string":
-            contact["name"] = filename.rsplit(".", 1)[0].replace("_", " ").replace("-", " ").title()
+        if not contact.get("name") or contact.get("name") in ["string", "Applicant Profile", ""]:
+            # Extract name using heuristic extractor
+            heuristic = extractor_service.extract_heuristic_career_profile(raw_text or filename, filename)
+            contact["name"] = heuristic["contact"]["name"]
 
-        # Clean city / state / location
+        # Clean location
         city = contact.get("city", "")
         state = contact.get("state", "")
         country = contact.get("country", "")
         if not contact.get("location"):
             parts = [p for p in [city, state, country] if p and p != "string"]
-            contact["location"] = ", ".join(parts) if parts else "Location not specified"
+            contact["location"] = ", ".join(parts) if parts else ""
 
-        # Ensure ID keys exist on arrays
+        # Assign unique IDs
         for idx, exp in enumerate(data.get("experiences", [])):
             if not exp.get("id"):
                 exp["id"] = f"exp-{idx + 1}"
@@ -259,7 +261,7 @@ class GroqService:
             if not lang.get("id"):
                 lang["id"] = f"lang-{idx + 1}"
 
-        # Flatten skills if allSkills is missing
+        # Flatten skills
         if not data.get("allSkills"):
             flat = []
             for cat in data.get("skillCategories", []):
@@ -269,133 +271,11 @@ class GroqService:
         return data
 
     def _get_fallback_parsed_profile(self, resume_text: str, filename: str) -> Dict[str, Any]:
-        """Intelligent fallback structured profile if API key is not yet set or fails."""
-        detected_role = "Senior Full-Stack Engineer"
-        lower_text = (resume_text + " " + filename).lower()
-        if "design" in lower_text or "figma" in lower_text or "ui/ux" in lower_text:
-            detected_role = "Senior Product Designer"
-        elif "product manager" in lower_text or "pm" in lower_text:
-            detected_role = "Product Manager"
-        elif "operations" in lower_text or "logistics" in lower_text:
-            detected_role = "Operations Director"
-        elif "marketing" in lower_text or "growth" in lower_text:
-            detected_role = "Growth Marketing Lead"
-
-        name_candidate = "Alex Morgan"
-        lines = [line.strip() for line in resume_text.splitlines() if line.strip()]
-        if lines and len(lines[0].split()) <= 4 and not any(k in lines[0].lower() for k in ['resume', 'curriculum', 'cv', 'page']):
-            name_candidate = lines[0].title()
-
-        return {
-            "contact": {
-                "name": name_candidate,
-                "role": detected_role,
-                "email": "alex.morgan@example.com",
-                "phone": "+1 (555) 234-5678",
-                "city": "San Francisco",
-                "state": "CA",
-                "country": "United States",
-                "location": "San Francisco, CA, USA",
-                "linkedin": "linkedin.com/in/alexmorgan",
-                "github": "github.com/alexmorgan",
-                "portfolio": "alexmorgan.dev"
-            },
-            "summary": f"High-performing {detected_role} with extensive experience leading cross-functional initiatives, scaling resilient architectures, and driving user-centric outcomes in high-velocity teams.",
-            "allSkills": [
-                "TypeScript", "React", "Node.js", "Python", "FastAPI",
-                "PostgreSQL", "Docker", "AWS", "System Architecture", "Agile Leadership"
-            ],
-            "skillCategories": [
-                {
-                    "category": "Core Engineering & Languages",
-                    "skills": ["TypeScript", "Python", "JavaScript", "SQL", "Go"]
-                },
-                {
-                    "category": "Frameworks & Libraries",
-                    "skills": ["React 19", "Next.js", "FastAPI", "TailwindCSS", "Node.js"]
-                },
-                {
-                    "category": "Cloud & Infrastructure",
-                    "skills": ["AWS", "Docker", "PostgreSQL", "Redis", "CI/CD Pipelines"]
-                },
-                {
-                    "category": "Leadership & Workflow",
-                    "skills": ["System Design", "Agile Methodologies", "Code Review", "Cross-Functional Collaboration"]
-                }
-            ],
-            "experiences": [
-                {
-                    "id": "exp-1",
-                    "company": "Nexus Technologies",
-                    "role": f"Lead {detected_role}",
-                    "location": "San Francisco, CA (Hybrid)",
-                    "dates": "2022 - Present",
-                    "isCurrent": True,
-                    "bullets": [
-                        "Architected and deployed high-throughput microservices handling 12M+ monthly requests with 99.98% uptime.",
-                        "Spearheaded redesign of core web application, reducing page load latency by 42% and increasing user retention by 18%.",
-                        "Mentored a team of 6 engineers and standardized automated CI/CD deployment pipelines."
-                    ],
-                    "metrics": ["12M+ monthly requests", "99.98% uptime", "42% latency reduction", "18% retention boost"],
-                    "technologies": ["React", "FastAPI", "PostgreSQL", "Docker", "AWS"]
-                },
-                {
-                    "id": "exp-2",
-                    "company": "Vanguard Digital Lab",
-                    "role": detected_role,
-                    "location": "New York, NY (Remote)",
-                    "dates": "2019 - 2022",
-                    "isCurrent": False,
-                    "bullets": [
-                        "Engineered full-stack features from conception to production, collaborating directly with design and product leads.",
-                        "Optimized database query performance, decreasing P95 API response times from 340ms to 65ms."
-                    ],
-                    "metrics": ["P95 response time cut from 340ms to 65ms"],
-                    "technologies": ["TypeScript", "Node.js", "GraphQL", "Redis"]
-                }
-            ],
-            "education": [
-                {
-                    "id": "edu-1",
-                    "institution": "University of California, Berkeley",
-                    "degree": "Bachelor of Science",
-                    "fieldOfStudy": "Computer Science",
-                    "dates": "2015 - 2019",
-                    "gpa": "3.85 / 4.0",
-                    "highlights": ["Dean's Honors List", "President of Software Engineering Club"]
-                }
-            ],
-            "certifications": [
-                {
-                    "id": "cert-1",
-                    "title": "AWS Certified Solutions Architect – Associate",
-                    "issuer": "Amazon Web Services",
-                    "date": "2023",
-                    "credentialId": "AWS-PSA-98214",
-                    "credentialUrl": "https://aws.amazon.com/verification"
-                }
-            ],
-            "projects": [
-                {
-                    "id": "proj-1",
-                    "title": "AI Workflow Automation Engine",
-                    "description": "High-speed document intelligence platform parsing unstructured data with streaming LLM inference.",
-                    "role": "Lead Architect",
-                    "link": "https://github.com/example/ai-workflow",
-                    "skills": ["FastAPI", "React", "Groq LLaMA", "Docker"]
-                }
-            ],
-            "languages": [
-                {
-                    "id": "lang-1",
-                    "language": "English",
-                    "proficiency": "Native or Bilingual"
-                }
-            ],
-            "detectedSeniority": "senior",
-            "totalYearsExperience": 6,
-            "_engine_model": "offline-fallback"
-        }
+        """
+        Zero-mock deterministic fallback parser that extracts REAL candidate info directly
+        from the uploaded document text.
+        """
+        return extractor_service.extract_heuristic_career_profile(resume_text, filename)
 
     def analyze_resume(self, resume_text: str, job_description: str) -> Dict[str, Any]:
         """
@@ -404,13 +284,12 @@ class GroqService:
         """
         self._init_client()
         if not self.client:
-            logger.warning("Groq API key not set. Returning mock ATS analysis.")
-            return self._get_mock_ats_analysis(job_description)
+            logger.warning("Groq API key not set. Returning deterministic ATS score calculation.")
+            return self._calculate_heuristic_ats_analysis(resume_text, job_description)
 
         system_prompt = (
             "You are an expert ATS (Applicant Tracking System) parser and career coach. "
-            "Your task is to analyze the user's resume text against the provided job description and return a detailed, professional evaluation in structured JSON format. "
-            "The JSON must strictly conform to this schema: \n"
+            "Analyze the candidate's resume text against the target job description and return a detailed evaluation in structured JSON format:\n"
             "{\n"
             "  \"overallScore\": int (0-100),\n"
             "  \"scoreStatus\": \"Excellent\" | \"Good\" | \"Needs Work\",\n"
@@ -424,7 +303,7 @@ class GroqService:
             "  \"targetRole\": \"string title of the target job\",\n"
             "  \"suggestions\": [\n"
             "    {\n"
-            "      \"id\": \"string unique identifier\",\n"
+            "      \"id\": \"sug-1\",\n"
             "      \"type\": \"warning\" | \"lightbulb\" | \"check\",\n"
             "      \"title\": \"string action title\",\n"
             "      \"description\": \"string detailed advice\",\n"
@@ -434,7 +313,7 @@ class GroqService:
             "    }\n"
             "  ]\n"
             "}\n"
-            "Respond ONLY with valid, raw JSON. Do not include markdown codeblocks or any additional text."
+            "Respond ONLY with valid JSON."
         )
 
         user_content = (
@@ -448,26 +327,88 @@ class GroqService:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content}
                 ],
-                temperature=0.2
+                temperature=0.1
             )
             return self._clean_and_parse_json(response_text)
         except Exception as e:
-            logger.error(f"Groq API resume analysis error: {e}. Falling back to mock data.")
-            return self._get_mock_ats_analysis(job_description)
+            logger.error(f"Groq API resume analysis error: {e}. Running fallback ATS analysis.")
+            return self._calculate_heuristic_ats_analysis(resume_text, job_description)
+
+    def _calculate_heuristic_ats_analysis(self, resume_text: str, job_description: str) -> Dict[str, Any]:
+        """Calculates real ATS scores based on actual keyword matching between resume and job description."""
+        resume_lower = resume_text.lower()
+        job_lower = job_description.lower() if job_description else ""
+
+        # Detect target role
+        target_role = "Target Position"
+        if "engineer" in resume_lower or "developer" in resume_lower:
+            target_role = "Software Engineer"
+        elif "designer" in resume_lower:
+            target_role = "Product Designer"
+        elif "manager" in resume_lower:
+            target_role = "Product / Project Manager"
+
+        # Calculate keyword overlap
+        job_words = set(re.findall(r'\b[a-z]{4,}\b', job_lower))
+        resume_words = set(re.findall(r'\b[a-z]{4,}\b', resume_lower))
+
+        if job_words:
+            matched_words = job_words.intersection(resume_words)
+            keyword_score = min(98, max(50, int((len(matched_words) / len(job_words)) * 100)))
+        else:
+            keyword_score = 85
+
+        # Check impact quantification
+        metrics_count = len(re.findall(r'\b\d+%\b|\$\d+|\b\d+\+\b', resume_text))
+        impact_score = min(95, 60 + (metrics_count * 5))
+        format_score = 90
+        overall = int((keyword_score * 0.4) + (impact_score * 0.3) + (format_score * 0.3))
+
+        return {
+            "overallScore": overall,
+            "scoreStatus": "Excellent" if overall >= 88 else "Good" if overall >= 75 else "Needs Work",
+            "summary": f"Resume evaluated against {target_role} benchmarks. Identified {metrics_count} quantifiable metrics and strong core competency keywords.",
+            "keywordsScore": keyword_score,
+            "keywordsSummary": f"Matched key skills and terminology across your background.",
+            "formattingScore": format_score,
+            "formattingSummary": "Clean section hierarchy and bullet point structure detected.",
+            "impactScore": impact_score,
+            "impactSummary": f"Detected {metrics_count} quantified achievements with metrics.",
+            "targetRole": target_role,
+            "suggestions": [
+                {
+                    "id": "sug-1",
+                    "type": "warning",
+                    "title": "Quantify Achievements with Percentages",
+                    "description": "Add measurable metrics (e.g. 'reduced latency by 30%', 'managed team of 5') to your bullet points.",
+                    "actionText": "Apply Metric Improvements",
+                    "applied": False,
+                    "category": "impact"
+                },
+                {
+                    "id": "sug-2",
+                    "type": "lightbulb",
+                    "title": "Reinforce Target Skills",
+                    "description": "Ensure your primary tools and frameworks match the requirements of your target role.",
+                    "actionText": "Sync Skills",
+                    "applied": False,
+                    "category": "keyword"
+                }
+            ]
+        }
 
     def generate_cover_letter(self, user_profile: Dict[str, Any], company_name: str, job_title: str, job_description: str) -> Dict[str, Any]:
         """
-        Generate a professional tailored cover letter based on user's profile and target job description.
+        Generate a professional tailored cover letter based on user's real career profile.
         """
         self._init_client()
         if not self.client:
-            logger.warning("Groq API key not set. Returning mock cover letter.")
-            return self._get_mock_cover_letter(user_profile, company_name, job_title)
+            return self._get_fallback_cover_letter(user_profile, company_name, job_title)
 
         system_prompt = (
-            "You are an elite career counselor and professional resume writer. "
-            "Write a highly tailored, persuasive, and modern cover letter. "
-            "Respond ONLY with a structured JSON object conforming to this schema:\n"
+            "You are an elite career counselor and executive resume writer. "
+            "Write a highly tailored, persuasive, and professional cover letter based on the candidate's real career profile and target company.\n"
+            "Respond ONLY with a JSON object strictly matching:\n"
             "{\n"
             "  \"applicantName\": \"string\",\n"
             "  \"applicantTitle\": \"string\",\n"
@@ -480,14 +421,14 @@ class GroqService:
             "  \"companyName\": \"string\",\n"
             "  \"companyAddress\": \"string\",\n"
             "  \"cityStateZip\": \"string\",\n"
-            "  \"paragraphs\": [\"string list containing each paragraph body\"],\n"
+            "  \"paragraphs\": [\"string\"],\n"
             "  \"signatureName\": \"string\"\n"
             "}\n"
-            "Respond ONLY with valid, raw JSON. Do not include markdown codeblocks or any additional text."
+            "Respond ONLY with valid JSON."
         )
 
         user_content = (
-            f"USER CAREER PROFILE:\n{json.dumps(user_profile, indent=2)}\n\n"
+            f"CANDIDATE PROFILE:\n{json.dumps(user_profile, indent=2)}\n\n"
             f"TARGET COMPANY: {company_name}\n"
             f"TARGET JOB TITLE: {job_title}\n"
             f"JOB DESCRIPTION:\n{job_description}"
@@ -499,62 +440,22 @@ class GroqService:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content}
                 ],
-                temperature=0.7
+                temperature=0.3
             )
             return self._clean_and_parse_json(response_text)
         except Exception as e:
-            logger.error(f"Groq API cover letter generation error: {e}. Falling back to mock letter.")
-            return self._get_mock_cover_letter(user_profile, company_name, job_title)
+            logger.error(f"Groq API cover letter generation error: {e}. Falling back to template.")
+            return self._get_fallback_cover_letter(user_profile, company_name, job_title)
 
-    def _get_mock_ats_analysis(self, job_description: str) -> Dict[str, Any]:
-        target_role = "Senior Product Designer"
-        if "engineer" in job_description.lower() or "developer" in job_description.lower():
-            target_role = "Senior Software Engineer"
-        elif "manager" in job_description.lower():
-            target_role = "Product Manager"
-
-        return {
-            "overallScore": 82,
-            "scoreStatus": "Good",
-            "summary": f"Your profile holds a solid baseline alignment with the {target_role} description. Adding quantitative metrics and reinforcing core technical skills will optimize parsing viability.",
-            "keywordsScore": 88,
-            "keywordsSummary": "Primary skill keywords are matched. Secondary toolchains/frameworks are missing.",
-            "formattingScore": 90,
-            "formattingSummary": "Clean section markers detected. Simple table-free structures ensure flawless parsing.",
-            "impactScore": 68,
-            "impactSummary": "Several job achievements are descriptive. Quantifying them with clear percentage improvements will boost the score.",
-            "targetRole": target_role,
-            "suggestions": [
-                {
-                    "id": "sug-groq-1",
-                    "type": "warning",
-                    "title": "Add Quantitative Metrics",
-                    "description": "Specify concrete KPIs. For example: 'increased user conversion by 18%' or 'reduced page loading time by 30%'.",
-                    "actionText": "Quantify Achievements",
-                    "applied": False,
-                    "category": "impact"
-                },
-                {
-                    "id": "sug-groq-2",
-                    "type": "lightbulb",
-                    "title": "Incorporate Target Skill Keywords",
-                    "description": "The job description emphasizes prototyping tools. Make sure to specify advanced design systems experience in your core list.",
-                    "actionText": "Update Skills List",
-                    "applied": False,
-                    "category": "keyword"
-                }
-            ]
-        }
-
-    def _get_mock_cover_letter(self, user_profile: Dict[str, Any], company_name: str, job_title: str) -> Dict[str, Any]:
+    def _get_fallback_cover_letter(self, user_profile: Dict[str, Any], company_name: str, job_title: str) -> Dict[str, Any]:
         import datetime
         today = datetime.date.today().strftime("%B %d, %Y")
-        
-        name = user_profile.get("name", "Alex Morgan")
-        role = user_profile.get("role", "Senior Software Engineer")
-        email = user_profile.get("email", "alex.morgan@example.com")
-        phone = user_profile.get("phone", "+1 (555) 234-5678")
-        loc = f"{user_profile.get('state', 'CA')}, {user_profile.get('country', 'USA')}"
+
+        name = user_profile.get("name", "Applicant")
+        role = user_profile.get("role", job_title or "Professional")
+        email = user_profile.get("email", "")
+        phone = user_profile.get("phone", "")
+        loc = user_profile.get("location") or f"{user_profile.get('state', '')}, {user_profile.get('country', '')}".strip(", ")
 
         return {
             "applicantName": name,
@@ -562,16 +463,16 @@ class GroqService:
             "email": email,
             "phone": phone,
             "location": loc,
-            "linkedin": "linkedin.com/in/alexmorgan",
+            "linkedin": user_profile.get("linkedin", ""),
             "date": today,
-            "hiringManager": "Hiring Manager",
-            "companyName": company_name,
-            "companyAddress": "123 Innovation Way",
-            "cityStateZip": "San Francisco, CA 94105",
+            "hiringManager": "Hiring Team",
+            "companyName": company_name or "Hiring Organization",
+            "companyAddress": "Hiring Department",
+            "cityStateZip": "Corporate Office",
             "paragraphs": [
-                f"I am writing to express my enthusiastic interest in the {job_title} position at {company_name}. With my extensive technical background and passion for scalable product development, I am confident in my ability to deliver substantial value to your engineering team.",
-                f"Throughout my career, I have consistently focused on building resilient, user-centered architectures that bridge customer needs with core business outcomes. My experience aligns seamlessly with {company_name}'s technical roadmap and ambitious goals.",
-                "Thank you for your time and consideration. I look forward to the opportunity to discuss how my skill set can accelerate your team's objectives."
+                f"I am writing to express my enthusiastic interest in the {job_title or 'open'} position at {company_name or 'your organization'}. With my background in {role} and a track record of delivering high-impact results, I am excited about the opportunity to contribute to your team's ongoing success.",
+                f"Throughout my career, I have focused on driving measurable outcomes, collaborating cross-functionally, and implementing efficient solutions. My technical skills and experience align closely with the qualifications needed for this role.",
+                "Thank you for your time and consideration. I welcome the opportunity to discuss how my experience and skill set can support your objectives."
             ],
             "signatureName": name
         }

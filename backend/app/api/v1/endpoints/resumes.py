@@ -74,7 +74,7 @@ async def parse_and_extract_career_profile(
             raw_text_preview=extracted_text[:400] + ("..." if len(extracted_text) > 400 else ""),
             profile=profile,
             metadata={
-                "model": "llama-3.3-70b-versatile",
+                "model": parsed_dict.get("_engine_model", "groq-llama-70b"),
                 "latency_ms": elapsed_ms,
                 "experiences_count": len(profile.experiences),
                 "skills_count": len(profile.allSkills),

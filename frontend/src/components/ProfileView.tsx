@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScreenType,
   UserProfile,
@@ -32,31 +32,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     experiences: user.experiences || tailoredCv.experiences || [],
     education: user.education || tailoredCv.education || [],
     skills: user.skills || tailoredCv.skills || [],
-    bio:
-      user.bio ||
-      tailoredCv.summary ||
-      'Dedicated professional with extensive experience delivering high-impact solutions, collaborating across cross-functional teams, and driving measurable results.',
-    certifications: user.certifications || [
-      {
-        id: 'cert-1',
-        title: 'AWS Certified Machine Learning – Specialty',
-        issuer: 'Amazon Web Services',
-        date: '2023 · Active',
-      },
-    ],
-    projects: user.projects || [
-      {
-        id: 'proj-1',
-        title: 'Enterprise AI & Data Processing Pipeline',
-        description:
-          'Engineered scalable microservices processing high-volume data streams with FastAPI, Celery, and PostgreSQL.',
-        skills: ['Python', 'FastAPI', 'PostgreSQL', 'Docker'],
-      },
-    ],
-    languages: user.languages || [
-      { id: 'l-1', language: 'English', proficiency: 'Native or Bilingual' },
-    ],
+    bio: user.bio || tailoredCv.summary || '',
+    certifications: user.certifications || [],
+    projects: user.projects || [],
+    languages: user.languages || [],
   });
+
+  // Sync state whenever the user prop updates (e.g. when resume is parsed)
+  useEffect(() => {
+    setProfile({
+      ...user,
+      experiences: user.experiences || [],
+      education: user.education || [],
+      skills: user.skills || [],
+      bio: user.bio || '',
+      certifications: user.certifications || [],
+      projects: user.projects || [],
+      languages: user.languages || [],
+    });
+    setHeaderForm({
+      name: user.name || '',
+      role: user.role || '',
+      location: user.location || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      bio: user.bio || '',
+    });
+  }, [user]);
 
   // Retractable section states (All retracted / collapsed by default for maximum speed and simplicity)
   const [openSections, setOpenSections] = useState({
@@ -76,7 +78,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [headerForm, setHeaderForm] = useState({
     name: profile.name,
     role: profile.role,
-    location: profile.location || 'San Francisco, CA',
+    location: profile.location || '',
     email: profile.email,
     phone: profile.phone,
     bio: profile.bio || '',

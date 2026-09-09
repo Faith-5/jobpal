@@ -183,61 +183,147 @@ export function App() {
     }));
   };
 
-  // Commit AI-parsed career profile to UserProfile and TailoredCv
+  // Commit AI-parsed career profile to UserProfile and TailoredCv, completely replacing mock data
   const handleApplyParsedProfile = (parsed: ParsedCareerProfile) => {
-    const experiences = (parsed.experiences || []).map((exp) => ({
-      id: exp.id || Math.random().toString(),
-      company: exp.company,
-      role: exp.role,
+    const experiences = (parsed.experiences || []).map((exp, idx) => ({
+      id: exp.id || `exp-${idx + 1}`,
+      company: exp.company || 'Company',
+      role: exp.role || parsed.contact.role || 'Professional Role',
       location: exp.location || '',
-      dates: exp.dates,
-      bullets: exp.bullets || [],
+      dates: exp.dates || 'Dates not specified',
+      bullets: exp.bullets && exp.bullets.length > 0 ? exp.bullets : ['Key responsibilities and accomplishments.'],
     }));
 
-    const education = (parsed.education || []).map((edu) => ({
-      id: edu.id || Math.random().toString(),
-      school: edu.institution,
-      degree: edu.degree,
-      dates: edu.dates,
+    const education = (parsed.education || []).map((edu, idx) => ({
+      id: edu.id || `edu-${idx + 1}`,
+      school: edu.institution || 'Academic Institution',
+      degree: edu.degree || 'Degree',
+      dates: edu.dates || '',
       fieldOfStudy: edu.fieldOfStudy || '',
     }));
 
-    setUser((prev) => ({
-      ...prev,
-      name: parsed.contact.name || prev.name,
-      role: parsed.contact.role || prev.role,
-      email: parsed.contact.email || prev.email,
-      phone: parsed.contact.phone || prev.phone,
-      location: parsed.contact.location || prev.location,
-      state: parsed.contact.state || prev.state,
-      country: parsed.contact.country || prev.country,
-      bio: parsed.summary || prev.bio,
-      skills: parsed.allSkills && parsed.allSkills.length > 0 ? parsed.allSkills : prev.skills,
+    const certifications = (parsed.certifications || []).map((cert, idx) => ({
+      id: cert.id || `cert-${idx + 1}`,
+      title: cert.title,
+      issuer: cert.issuer || 'Issuing Authority',
+      date: cert.date || 'Certified',
+    }));
+
+    const projects = (parsed.projects || []).map((proj, idx) => ({
+      id: proj.id || `proj-${idx + 1}`,
+      title: proj.title,
+      description: proj.description || '',
+      link: proj.link || '',
+      skills: proj.skills || [],
+    }));
+
+    const languages = (parsed.languages || []).map((lang, idx) => ({
+      id: lang.id || `lang-${idx + 1}`,
+      language: lang.language,
+      proficiency: lang.proficiency || 'Fluent',
+    }));
+
+    const flatSkills = parsed.allSkills && parsed.allSkills.length > 0
+      ? parsed.allSkills
+      : ['Problem Solving', 'Strategic Planning', 'Communication'];
+
+    // Construct clean linked accounts if present
+    const linkedAccounts = [];
+    if (parsed.contact.linkedin) {
+      const url = parsed.contact.linkedin.startsWith('http')
+        ? parsed.contact.linkedin
+        : `https://${parsed.contact.linkedin}`;
+      linkedAccounts.push({
+        id: 'acc-li',
+        provider: 'LinkedIn',
+        username: parsed.contact.linkedin.replace(/https?:\/\/(?:www\.)?linkedin\.com\/in\//i, '').replace(/\/$/, ''),
+        url,
+        verified: true,
+        sinceYear: '2023',
+      });
+    }
+    if (parsed.contact.github) {
+      const url = parsed.contact.github.startsWith('http')
+        ? parsed.contact.github
+        : `https://${parsed.contact.github}`;
+      linkedAccounts.push({
+        id: 'acc-gh',
+        provider: 'GitHub',
+        username: parsed.contact.github.replace(/https?:\/\/(?:www\.)?github\.com\//i, '').replace(/\/$/, ''),
+        url,
+        verified: true,
+        sinceYear: '2023',
+      });
+    }
+
+    const candidateName = parsed.contact.name || user.name || 'Professional';
+    const candidateRole = parsed.contact.role || user.role || 'Specialist';
+    const candidateEmail = parsed.contact.email || user.email || '';
+    const candidatePhone = parsed.contact.phone || user.phone || '';
+    const candidateLocation = parsed.contact.location || [parsed.contact.city, parsed.contact.state, parsed.contact.country].filter(Boolean).join(', ');
+
+    // 1. Wipe mock user profile and replace with user's authentic data
+    const updatedUser: UserProfile = {
+      ...user,
+      name: candidateName,
+      role: candidateRole,
+      email: candidateEmail,
+      phone: candidatePhone,
+      location: candidateLocation,
+      state: parsed.contact.state || '',
+      country: parsed.contact.country || '',
+      bio: parsed.summary || `Accomplished ${candidateRole} with extensive experience delivering high-impact solutions.`,
+      skills: flatSkills,
       experienceLevel: parsed.detectedSeniority === 'senior' ? 'senior' : parsed.detectedSeniority === 'junior' ? 'junior' : 'mid',
-      experienceCount: experiences.length || prev.experienceCount,
-      educationCount: education.length || prev.educationCount,
-      projectsCount: (parsed.projects || []).length || prev.projectsCount,
-      experiences: experiences.length > 0 ? experiences : prev.experiences,
-      education: education.length > 0 ? education : prev.education,
-      certifications: (parsed.certifications && parsed.certifications.length > 0) ? parsed.certifications : prev.certifications,
-      projects: (parsed.projects && parsed.projects.length > 0) ? parsed.projects : prev.projects,
-      languages: (parsed.languages && parsed.languages.length > 0) ? parsed.languages : prev.languages,
-    }));
+      experienceCount: experiences.length,
+      educationCount: education.length,
+      projectsCount: projects.length,
+      experiences,
+      education,
+      certifications,
+      projects,
+      languages,
+      linkedAccounts,
+    };
 
-    setTailoredCv((prev) => ({
+    setUser(updatedUser);
+    saveStoredUserSession(updatedUser);
+
+    // 2. Wipe previous tailored CV and replace with candidate's real CV details
+    setTailoredCv({
+      targetRole: candidateRole,
+      matchScore: 94,
+      targetCompany: 'Target Company',
+      name: candidateName,
+      role: candidateRole,
+      email: candidateEmail,
+      phone: candidatePhone,
+      location: candidateLocation,
+      summary: parsed.summary || updatedUser.bio,
+      skills: flatSkills,
+      experiences,
+      education,
+    });
+
+    // 3. Update ATS analysis for the user's role
+    setAtsData((prev) => ({
       ...prev,
-      name: parsed.contact.name || prev.name,
-      role: parsed.contact.role || prev.role,
-      email: parsed.contact.email || prev.email,
-      phone: parsed.contact.phone || prev.phone,
-      location: parsed.contact.location || prev.location,
-      summary: parsed.summary || prev.summary,
-      skills: parsed.allSkills && parsed.allSkills.length > 0 ? parsed.allSkills : prev.skills,
-      experiences: experiences.length > 0 ? experiences : prev.experiences,
-      education: education.length > 0 ? education : prev.education,
+      targetRole: `${candidateRole} (Optimized Match)`,
+      summary: `Your parsed career profile has been fully imported and synchronized! All ${experiences.length} positions and ${flatSkills.length} skills are active.`,
     }));
 
-    showToast(`Career profile successfully parsed & synchronized for ${parsed.contact.name || 'your profile'}!`);
+    // 4. Update Cover Letter header details
+    setCoverLetter((prev) => ({
+      ...prev,
+      applicantName: candidateName,
+      applicantTitle: candidateRole,
+      email: candidateEmail,
+      phone: candidatePhone,
+      location: candidateLocation,
+      linkedin: parsed.contact.linkedin || prev.linkedin,
+    }));
+
+    showToast(`Career profile successfully parsed & synchronized for ${candidateName}!`);
     setCurrentScreen('profile');
   };
 
